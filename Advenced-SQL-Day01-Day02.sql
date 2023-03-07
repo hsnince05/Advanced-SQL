@@ -20,6 +20,7 @@ soyisim VARCHAR(50)
 INSERT INTO actor VALUES (1, 'Christian', 'Bale');
 INSERT INTO actor VALUES (2, 'Kevin', 'Spacey');
 INSERT INTO actor VALUES (3, 'Edward', 'Norton');
+
 do $$
 declare
     film_count integer :=0;
@@ -30,9 +31,13 @@ begin
     
     raise notice 'The number of films is %', film_count; -- % işareti yer tutucu olarak kullanılıyor
 end  $$ ;
+
+
 --***************************************************************
 --********************* VARIABLES - CONSTANT ********************
 --***************************************************************
+
+
 do $$
 declare
     counter     integer :=1;
@@ -46,6 +51,8 @@ begin
                 last_name,
                 payment;
 end $$;
+
+
 -- Task 1 : değişkenler oluşturarak ekrana " Ahmet ve Mehmet beyler 120 tl ye bilet aldılar. " 
 --              cümlesini ekrana basınız
 do $$
@@ -59,6 +66,8 @@ begin
                 second_person,
                 payment;
 end $$;
+
+
 --********************* BEKLETME KOMUDU **************************
 do $$
 declare
@@ -70,6 +79,7 @@ begin
 end $$;
                 
 --********************* TABLODAN DATA TİPİNİ KOPLAMA *******************
+
     /*
         -> variable_name  table_name.column_name%type;  
         ->( Tablodaki datanın aynı data türünde variable oluşturmaya yarıyor)
@@ -87,6 +97,8 @@ begin
     
     raise notice 'Film title id 1 : %' , film_title;
 end $$ ;
+
+
 --********************* İÇ İÇE BLOK YAPILARI *******************
 do $$
 <<outher_block>>
@@ -109,6 +121,8 @@ begin
     raise notice 'Counter in the outherBlock is %', counter;
     
 end outher_block $$ ;
+
+
 -- *********************** Row Type **************************
 do $$
 declare
@@ -123,6 +137,8 @@ begin
                     selected_actor.isim,
                     selected_actor.soyisim;
 end $$ ;
+
+
 -- *********************** Record Type *********************
     /*
         -> Row Type gibi çalışır ama record un tamamı değilde belli başlıkları almak 
@@ -140,3 +156,148 @@ begin
     
     raise notice '% % %' , rec.id, rec.title, rec.type;
 end $$ ;
+
+--*******************CONSTANT ********************************
+
+
+do $$
+declare
+	vat	constant numeric := 0.1;
+	net_price	numeric := 20.5;
+
+begin
+	raise notice 'Satış fiyatı : %' , net_price*(1+vat);
+	-- vat := 0.05; -- constant bir ifadeyi ilk setleme işleminden sonra değer değiştirmeye çalışırsak hata alırız
+
+end $$ ;
+
+-- constant bir ifadeye RT da değer verebilir miyim ???
+
+do $$
+declare
+	start_at constant time := now();
+
+begin
+	raise notice 'bloğun çalışma zamanı : %', start_at;
+
+end $$ ;
+
+
+-- //////////// CONTROL STRUCTURES ////////////////////////////
+-- ***************If Statement ****************
+
+-- syntax :
+/*
+
+	if condition then
+			statement
+	end if ;
+		
+*/
+
+-- Task : 1 id li filmi bulalım eğer yoksa ekrana uyarı yazısı verelim
+
+do $$
+declare
+	istenen_film film%rowtype;
+	istenen_filmId film.id%type := 10;
+
+begin
+	select * from film
+	into istenen_film
+	where id = istenen_filmId;
+	
+	if not found then
+		raise notice 'Girdiğiniz id li film bulunamadı : %', istenen_filmId;
+	end if;
+	
+end $$;
+
+-- ************** IF-THEN-ELSE ****************
+/*
+	IF condition THEN
+			statement;
+	ELSE
+			alternative statement;
+	END IF
+*/
+
+-- Task : 1 idli film varsa title bilgisini yazınız yoksa uyarı yazısını ekrana basınız
+
+do $$
+declare
+
+	selected_film film%rowtype;
+	input_film_id film.id%type :=10;
+	
+begin
+	select * from film
+	into selected_film
+	where id = input_film_id;
+	
+	if not found then
+		raise notice 'Girmiş olduğunuz id li film bulunamadı : %', input_film_id;
+	else
+		raise notice 'Filmin ismi : %', selected_film.title;
+	end if;
+
+end $$;
+/*
+
+Task : 1 id li film varsa ;
+			süresi 50 dakikanın altında ise Short,
+			50<length<120 ise Medium,
+			length>120 ise Long yazalım
+*/
+do $$
+declare
+	v_film film%rowtype;
+	len_description varchar(50);
+
+begin
+
+	select * from film
+	into v_film  --- v_film.id = 1  / v_film.title ='Kuzuların Sessizliği'
+	where id = 30;
+	
+	if not found then
+		raise notice 'Filim bulunamadı';
+	else
+		if v_film.length > 0 and v_film.length <=50 then
+				len_description='Short';
+			elseif v_film.length>50 and v_film.length<120 then
+				len_description='Medium';
+			elseif v_film.length>120 then
+				len_description='Long';
+			else
+				len_description='Tanımlanamıyor';
+	     end if;
+	 raise notice ' % filminin süresi : %', v_film.title, len_description;
+	 end if;			
+
+end $$;
+
+-- Task : Filmin türüne göre çocuklara uygun olup olmadığını ekrana yazalım
+
+do $$
+declare
+	uyari varchar(50);
+	tur film.type%type;
+begin
+	select type from film
+	into tur
+	where id = 4;
+	
+	if found then 
+		case tur
+			when 'Korku' then uyari='Çocuklar için uygun değildir';
+			when 'Macera' then uyari='Çocuklar için uygun';
+			when 'Animasyon' then uyari ='Çocuklar için tavsiye edilir';
+			else
+				uyari='Tanımlanamadı';
+		end case;
+        raise notice '%', uyari;
+	end if;
+end $$;
+
+
